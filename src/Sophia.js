@@ -6,6 +6,7 @@
   var canvas;
   var objectsToScaleDown = [];
   var currentRulerItems = [];
+  var currentBackgroundItems = [];
   var defaultZoomThreshold = '3';
   var defaultBackwardZoomThreshold = '0';
   var forwardZoomThreshold = defaultZoomThreshold;
@@ -51,12 +52,17 @@
 
   function redrawRulerItem(jumpSizeInSeconds) {
     var canvasWidth = canvas.getWidth();
+    var canvasHeight = canvas.getHeight();
     var canvasCoords = canvas.vptCoords;
     var canvasTopLeft = canvasCoords.tl?.x || 0;
     var canvasTopRight = canvasCoords.tr?.x || canvasWidth;
     if (currentRulerItems.length) {
       canvas.remove(...currentRulerItems);
       currentRulerItems = [];
+    }
+    if (currentBackgroundItems.length) {
+      canvas.remove(...currentBackgroundItems);
+      currentBackgroundItems = [];
     }
     var columnCount = maxHourInSeconds / jumpSizeInSeconds;
     var columnSize = canvasWidth / columnCount;
@@ -65,7 +71,7 @@
     var startJumpSizeInSeconds = Math.max(jumpCountForStartPoint * jumpSizeInSeconds, 0);
     var jumpCountForEndPoint = Math.ceil(canvasTopRight / columnSize) + 1;
     var endPoint = Math.min(jumpCountForEndPoint * columnSize, canvasWidth);
-    for (i = startPoint, j = startJumpSizeInSeconds; i < endPoint; i += columnSize, j+= jumpSizeInSeconds) {
+    for (i = startPoint, j = startJumpSizeInSeconds, k = Math.max(jumpCountForStartPoint, 0); i < endPoint; i += columnSize, j+= jumpSizeInSeconds, k+= 1) {
       var verticalLine = new fabric.Line([i,0,i,20], {
         stroke: 'black',
         strokeWidth: 1,
@@ -87,6 +93,20 @@
       });
       canvas.add(group);
       currentRulerItems.push(group);
+      var backgroundColor = k % 2 === 0 ? 'rgb(255, 255, 255)' : 'rgb(245, 245, 245)';
+      var backgroundItem = new fabric.Rect({
+        top: 0,
+        left: i,
+        width: columnSize,
+        height: canvasHeight,
+        fill: backgroundColor,
+        selectable: false,
+        strokeWidth: 0,
+        objectCaching: false
+      });
+      canvas.add(backgroundItem);
+      backgroundItem.sendToBack();
+      currentBackgroundItems.push(backgroundItem);
     }
   }
 
