@@ -73,7 +73,7 @@
     var endPoint = Math.min(jumpCountForEndPoint * columnSize, canvasWidth);
     for (i = startPoint, j = startJumpSizeInSeconds, k = Math.max(jumpCountForStartPoint, 0); i < endPoint; i += columnSize, j+= jumpSizeInSeconds, k+= 1) {
       var verticalLine = new fabric.Line([i,0,i,20], {
-        stroke: 'black',
+        stroke: 'rgb(128, 128, 116)',
         strokeWidth: 1,
         objectCaching: false
       });
@@ -113,13 +113,13 @@
   function drawRuler() {
     var canvasWidth = canvas.getWidth();
     var topLine = new fabric.Line([0,0,canvasWidth,0], {
-      stroke: 'black',
+      stroke: 'rgb(128, 128, 116)',
       strokeWidth: 1,
       selectable: false
     });
     canvas.add(topLine);
     var botLine = new fabric.Line([0,20,canvasWidth,20], {
-      stroke: 'black',
+      stroke: 'rgb(128, 128, 116)',
       strokeWidth: 1,
       selectable: false
     });
