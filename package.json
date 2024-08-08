@@ -1,0 +1,22 @@
+{
+  "name": "timeline-canvas",
+  "version": "1.0.0",
+  "description": "Simple timeline base on vector renderer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/longnguyenduy233/timeline-canvas.git"
+  },
+  "keywords": [
+    "timeline"
+  ],
+  "author": "Long Nguyen Duy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/longnguyenduy233/timeline-canvas/issues"
+  },
+  "homepage": "https://github.com/longnguyenduy233/timeline-canvas#readme"
+}
