@@ -4,6 +4,8 @@
   }
 
   var canvas;
+  var canvasWidth;
+  var canvasHeight;
   var objectsToScaleDown = [];
   var currentRulerItems = [];
   var currentBackgroundItems = [];
@@ -42,6 +44,8 @@
       throw 'Fabric is not loaded';
     }
     canvas = new fabric.Canvas('canvas');
+    canvasWidth = canvas.getWidth();
+    canvasHeight = canvas.getHeight();
 
     renderTimelineData();
     handleCanvasZooming();
@@ -51,8 +55,6 @@
   }
 
   function redrawRulerItem(jumpSizeInSeconds) {
-    var canvasWidth = canvas.getWidth();
-    var canvasHeight = canvas.getHeight();
     var canvasCoords = canvas.vptCoords;
     var canvasTopLeft = canvasCoords.tl?.x || 0;
     var canvasTopRight = canvasCoords.tr?.x || canvasWidth;
@@ -72,8 +74,8 @@
     var jumpCountForEndPoint = Math.ceil(canvasTopRight / columnSize) + 1;
     var endPoint = Math.min(jumpCountForEndPoint * columnSize, canvasWidth);
     for (i = startPoint, j = startJumpSizeInSeconds, k = Math.max(jumpCountForStartPoint, 0); i < endPoint; i += columnSize, j+= jumpSizeInSeconds, k+= 1) {
-      var verticalLine = new fabric.Line([i,0,i,20], {
-        stroke: 'rgb(128, 128, 116)',
+      var verticalLine = new fabric.Line([i,0,i,canvasHeight], {
+        stroke: 'rgb(191, 191, 191)',
         strokeWidth: 1,
         objectCaching: false
       });
@@ -92,6 +94,7 @@
         objectCaching: false
       });
       canvas.add(group);
+      group.sendToBack();
       currentRulerItems.push(group);
       var backgroundColor = k % 2 === 0 ? 'rgb(255, 255, 255)' : 'rgb(245, 245, 245)';
       var backgroundItem = new fabric.Rect({
@@ -111,15 +114,14 @@
   }
 
   function drawRuler() {
-    var canvasWidth = canvas.getWidth();
     var topLine = new fabric.Line([0,0,canvasWidth,0], {
-      stroke: 'rgb(128, 128, 116)',
+      stroke: 'rgb(191, 191, 191)',
       strokeWidth: 1,
       selectable: false
     });
     canvas.add(topLine);
     var botLine = new fabric.Line([0,20,canvasWidth,20], {
-      stroke: 'rgb(128, 128, 116)',
+      stroke: 'rgb(191, 191, 191)',
       strokeWidth: 1,
       selectable: false
     });
@@ -139,7 +141,6 @@
         var e = opt.e;
         var zoom = canvas.getZoom();
         var vpt = this.viewportTransform;
-        var canvasWidth = canvas.getWidth();
         vpt[4] += e.clientX - this.lastPosX;
         if (vpt[4] >= 0) {
           vpt[4] = 0;
@@ -175,7 +176,6 @@
     canvas.on('mouse:wheel', function(opt) {
       var delta = opt.e.deltaY;
       var zoom = canvas.getZoom();
-      var canvasWidth = canvas.getWidth();
       // zoom *= 0.999 ** delta;
       zoom += -0.01 * delta;
       if (zoom > 5000) zoom = 5000;
@@ -270,7 +270,7 @@
           fill: item.color,
           selectable: false,
           strokeWidth: 2,
-          stroke: 'rgba(100,200,200,0.5)',
+          stroke: 'white',
           originX: 'center',
           originY: 'center'
         });
@@ -281,7 +281,6 @@
   }
 
   function translateSecondsToCanvasCoordinateSystem(seconds) {
-    var canvasWidth = canvas.getWidth();
     return (seconds * canvasWidth) / 86_400;
   }
 
