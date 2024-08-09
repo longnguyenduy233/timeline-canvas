@@ -109,7 +109,8 @@
         left: i,
         top: 0,
         selectable: false,
-        objectCaching: false
+        objectCaching: false,
+        hoverCursor: 'default'
       });
       canvas.add(group);
       group.sendToBack();
@@ -123,7 +124,8 @@
         fill: backgroundColor,
         selectable: false,
         strokeWidth: 0,
-        objectCaching: false
+        objectCaching: false,
+        hoverCursor: 'default'
       });
       canvas.add(backgroundItem);
       backgroundItem.sendToBack();
