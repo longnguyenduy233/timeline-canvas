@@ -28,18 +28,35 @@
     '5000': 1,//1s
   };
   var oldZoom = 1;
+  var currentTimeVerticalLine;
+  var currentTimeVerticalLineInterval;
 
   Sophia.prototype = {
     setOptions: function(options) {
       this.options = options;
       return this;
     },
+    destroy: function() {
+      if (currentTimeVerticalLineInterval) {
+        clearInterval(currentTimeVerticalLineInterval);
+      }
+      return this;
+    }
   };
 
   Sophia.init = function(items, options) {
     var self = this;
+    var defaultOptions = {
+      locale: null,
+      timeZone: null,
+    };
     self.items = items;
-    self.options = options;
+    self.options = {
+      ...defaultOptions,
+      ...options
+    };
+    self.locale = self.options.locale;
+    self.timeZone = self.options.timeZone;
     if (!fabric) {
       throw 'Fabric is not loaded';
     }
@@ -52,6 +69,7 @@
     handleCanvasPanning();
 
     drawRuler();
+    addCurrentTimeVerticalLine(self.locale, self.timeZone);
   }
 
   function redrawRulerItem(jumpSizeInSeconds) {
@@ -201,8 +219,7 @@
       redrawRulerItemBaseOnZoomLevel(zoom);
       oldZoom = zoom;
 
-      scaleDownObjects(zoom, objectsToScaleDown);
-      scaleDownObjects(zoom, currentRulerItems);
+      scaleDownObjects(zoom, [...objectsToScaleDown, ...currentRulerItems, currentTimeVerticalLine]);
 
       opt.e.preventDefault();
       opt.e.stopPropagation();
@@ -282,6 +299,28 @@
 
   function translateSecondsToCanvasCoordinateSystem(seconds) {
     return (seconds * canvasWidth) / 86_400;
+  }
+
+  function getCurrentTimeToSeconds(locale, timeZone) {
+    locale = locale || [];
+    timeZone = timeZone || undefined;
+    var currentTime = new Date().toLocaleTimeString(locale, {hour12: false, timeZone});
+    var currentTimeInSeconds = toTimeNumber(currentTime);
+    return translateSecondsToCanvasCoordinateSystem(currentTimeInSeconds);
+  }
+
+  function addCurrentTimeVerticalLine(locale, timeZone) {
+    var left = getCurrentTimeToSeconds(locale, timeZone);
+    currentTimeVerticalLine = new fabric.Line([left,0,left,canvasHeight], {
+      stroke: 'red',
+      strokeWidth: 2,
+    });
+    canvas.add(currentTimeVerticalLine);
+    currentTimeVerticalLineInterval = setInterval(() => {
+      var left = getCurrentTimeToSeconds(locale, timeZone);
+      currentTimeVerticalLine.set({left});
+      currentTimeVerticalLine.bringToFront();
+    }, 1000);
   }
 
   Sophia.init.prototype = Sophia.prototype;

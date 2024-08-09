@@ -22,5 +22,10 @@ var items = [
     color: 'red'
   }
 ];
+// set others time zone as example below: 
+// var options = {
+//   locale: 'en-US',
+//   timeZone: 'America/New_York'
+// };
 var options = {};
 var s = S$(items, options);
