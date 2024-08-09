@@ -3,7 +3,6 @@
     return new Sophia.init(items, options);
   }
 
-
   var canvas;
   var objectsToScaleDown = [];
   var currentRulerItems = [];
