@@ -41,6 +41,10 @@
         clearInterval(currentTimeVerticalLineInterval);
       }
       return this;
+    },
+    setZoom: function(zoom) {
+      setZoom.call(canvas, zoom);
+      return this;
     }
   };
 
@@ -198,34 +202,41 @@
       var zoom = canvas.getZoom();
       // zoom *= 0.999 ** delta;
       zoom += -0.01 * delta;
-      if (zoom > 5000) zoom = 5000;
-      if (zoom < 1) zoom = 1;
-
-      //handle horizontal zoom
       var point = { x: opt.e.offsetX, y: opt.e.offsetY };
-      var before = point,
-      vpt = [...this.viewportTransform];
-      var newPoint = fabric.util.transformPoint(point, fabric.util.invertTransform(vpt));
-      vpt[0] = zoom;
-      var after = fabric.util.transformPoint(newPoint, vpt);
-      vpt[4] += before.x - after.x;
-
-      //correct translation when user zoom out
-      if (vpt[4] >= 0) {
-        vpt[4] = 0;
-      } else if (vpt[4] < canvasWidth - canvasWidth * zoom) {
-        vpt[4] = canvasWidth - canvasWidth * zoom;
-      }
-      this.setViewportTransform(vpt);
-
-      redrawRulerItemBaseOnZoomLevel(zoom);
-      oldZoom = zoom;
-
-      scaleDownObjects(zoom, [...objectsToScaleDown, ...currentRulerItems, currentTimeVerticalLine]);
-
+      setZoom.call(this, zoom, point);
       opt.e.preventDefault();
       opt.e.stopPropagation();
     });
+  }
+
+  function setZoom(zoom, point) {
+    if (zoom > 5000) zoom = 5000;
+    if (zoom < 1) zoom = 1;
+
+    if (!point) {
+      point = { x: canvasWidth / 2, y: canvasHeight / 2};
+    }
+
+    //handle horizontal zoom
+    var before = point,
+    vpt = [...this.viewportTransform];
+    var newPoint = fabric.util.transformPoint(point, fabric.util.invertTransform(vpt));
+    vpt[0] = zoom;
+    var after = fabric.util.transformPoint(newPoint, vpt);
+    vpt[4] += before.x - after.x;
+
+    //correct translation when user zoom out
+    if (vpt[4] >= 0) {
+      vpt[4] = 0;
+    } else if (vpt[4] < canvasWidth - canvasWidth * zoom) {
+      vpt[4] = canvasWidth - canvasWidth * zoom;
+    }
+    this.setViewportTransform(vpt);
+
+    redrawRulerItemBaseOnZoomLevel(zoom);
+    oldZoom = zoom;
+
+    scaleDownObjects(zoom, [...objectsToScaleDown, ...currentRulerItems, currentTimeVerticalLine]);
   }
 
   function redrawRulerItemBaseOnZoomLevel(zoom) {
