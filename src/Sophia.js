@@ -1,6 +1,6 @@
 ;(function(global, fabric) {
-  var Sophia = function(items, options) {
-    return new Sophia.init(items, options);
+  var Sophia = function(items, groups, options) {
+    return new Sophia.init(items, groups, options);
   }
 
   var canvas;
@@ -48,15 +48,16 @@
     }
   };
 
-  Sophia.init = function(items, options) {
+  Sophia.init = function(items, groups, options) {
     var self = this;
     var defaultOptions = {
       locale: null,
       timeZone: null,
-      marginTopOfItem: 50,
-      heightOfItem: 30
+      marginTopOfItem: 20,
+      heightOfItem: 20
     };
     self.items = items;
+    self.groups = groups;
     self.options = {
       ...defaultOptions,
       ...options
@@ -280,26 +281,46 @@
 
   function renderTimelineData() {
     var items = this.items;
-    var options = this.options;
+    var { heightOfItem, marginTopOfItem } = this.options;
+    var groups = this.groups;
+    if (items) {
+      renderTimelineItem(items, marginTopOfItem, heightOfItem);
+      return;
+    }
+    var top = marginTopOfItem;
+    (groups || []).forEach(group => {
+      if (group.subgroup) {
+        (group.subgroup || []).forEach(subgroup => {
+          renderTimelineItem(subgroup.items, top, heightOfItem);
+          top += heightOfItem;
+        });
+      } else {
+        renderTimelineItem(group.items, top, heightOfItem);
+      }
+      top += group.height;
+    });
+  }
+
+  function renderTimelineItem(items, top, heightOfItem) {
     (items || []).forEach(item => {
       var startTimeInSeconds = toTimeNumber(item.startTime);
       if (item.endTime) {
         var endTimeInSeconds = toTimeNumber(item.endTime);
         var duration = endTimeInSeconds - startTimeInSeconds;
         var rect = new fabric.Rect({
-          top: options.marginTopOfItem,
+          top: top,
           left: translateSecondsToCanvasCoordinateSystem(startTimeInSeconds),
           width: translateSecondsToCanvasCoordinateSystem(duration),
-          height: options.heightOfItem,
+          height: heightOfItem,
           fill: item.color,
           selectable: false,
           strokeWidth: 0
         });
         canvas.add(rect);
       } else {
-        var radius = options.heightOfItem / 2;
+        var radius = heightOfItem / 2;
         var circle = new fabric.Circle({
-          top: options.marginTopOfItem + radius,
+          top: top + radius,
           left: translateSecondsToCanvasCoordinateSystem(startTimeInSeconds),
           radius,
           fill: item.color,
