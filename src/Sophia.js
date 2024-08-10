@@ -53,6 +53,8 @@
     var defaultOptions = {
       locale: null,
       timeZone: null,
+      marginTopOfItem: 50,
+      heightOfItem: 30
     };
     self.items = items;
     self.options = {
@@ -68,7 +70,7 @@
     canvasWidth = canvas.getWidth();
     canvasHeight = canvas.getHeight();
 
-    renderTimelineData();
+    renderTimelineData.call(self);
     handleCanvasZooming();
     handleCanvasPanning();
 
@@ -277,26 +279,29 @@
   }
 
   function renderTimelineData() {
+    var items = this.items;
+    var options = this.options;
     (items || []).forEach(item => {
       var startTimeInSeconds = toTimeNumber(item.startTime);
       if (item.endTime) {
         var endTimeInSeconds = toTimeNumber(item.endTime);
         var duration = endTimeInSeconds - startTimeInSeconds;
         var rect = new fabric.Rect({
-          top: 100,
+          top: options.marginTopOfItem,
           left: translateSecondsToCanvasCoordinateSystem(startTimeInSeconds),
           width: translateSecondsToCanvasCoordinateSystem(duration),
-          height: 30,
+          height: options.heightOfItem,
           fill: item.color,
           selectable: false,
           strokeWidth: 0
         });
         canvas.add(rect);
       } else {
+        var radius = options.heightOfItem / 2;
         var circle = new fabric.Circle({
-          top: 100 + 15,
+          top: options.marginTopOfItem + radius,
           left: translateSecondsToCanvasCoordinateSystem(startTimeInSeconds),
-          radius: 15,
+          radius,
           fill: item.color,
           selectable: false,
           strokeWidth: 2,
