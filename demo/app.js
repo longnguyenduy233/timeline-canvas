@@ -41,8 +41,9 @@ var groups = [
             color: "#4F92D6",
           },
           {
-            startTime: "08:00:00",
+            startTime: "08:30:00",
             color: "blue",
+            id: 'second-item'
           },
           {
             startTime: "02:00:00",
@@ -70,6 +71,7 @@ var groups = [
           {
             startTime: "08:00:00",
             color: "red",
+            id: 'first-item'
           },
           {
             startTime: "02:00:00",
@@ -84,10 +86,17 @@ var groups = [
     ],
   },
 ];
+var dependency = [
+  {
+    id: '1',
+    firstItemId: 'first-item',
+    secondItemId: 'second-item'
+  }
+];
 // set others time zone as example below:
 // var options = {
 //   locale: 'en-US',
 //   timeZone: 'America/New_York'
 // };
 var options = {};
-var s = S$(null, groups, options);
+var s = S$(null, groups, dependency, options);

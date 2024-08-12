@@ -1,6 +1,6 @@
 ;(function(global, fabric) {
-  var Sophia = function(items, groups, options) {
-    return new Sophia.init(items, groups, options);
+  var Sophia = function(items, groups, dependency, options) {
+    return new Sophia.init(items, groups, dependency, options);
   }
 
   var canvas;
@@ -9,6 +9,7 @@
   var objectsToScaleDown = [];
   var currentRulerItems = [];
   var currentBackgroundItems = [];
+  var markers = [];
   var defaultZoomThreshold = '3';
   var defaultBackwardZoomThreshold = '0';
   var forwardZoomThreshold = defaultZoomThreshold;
@@ -30,6 +31,8 @@
   var oldZoom = 1;
   var currentTimeVerticalLine;
   var currentTimeVerticalLineInterval;
+  var dependencies;
+  var arrow;
 
   Sophia.prototype = {
     setOptions: function(options) {
@@ -48,7 +51,7 @@
     }
   };
 
-  Sophia.init = function(items, groups, options) {
+  Sophia.init = function(items, groups, dependency, options) {
     var self = this;
     var defaultOptions = {
       locale: null,
@@ -64,6 +67,8 @@
     };
     self.locale = self.options.locale;
     self.timeZone = self.options.timeZone;
+    self.dependency = dependency;
+    dependencies = dependency;
     if (!fabric) {
       throw 'Fabric is not loaded';
     }
@@ -77,6 +82,7 @@
 
     drawRuler();
     addCurrentTimeVerticalLine(self.locale, self.timeZone);
+    renderArrow('first-item', self.dependency);
   }
 
   function redrawRulerItem(jumpSizeInSeconds) {
@@ -240,6 +246,10 @@
     oldZoom = zoom;
 
     scaleDownObjects(zoom, [...objectsToScaleDown, ...currentRulerItems, currentTimeVerticalLine]);
+    if (arrow) {
+      canvas.remove(arrow.canvasObj);
+      renderArrow(arrow.firstItemId, dependencies);
+    }
   }
 
   function redrawRulerItemBaseOnZoomLevel(zoom) {
@@ -314,7 +324,8 @@
           height: heightOfItem,
           fill: item.color,
           selectable: false,
-          strokeWidth: 0
+          strokeWidth: 0,
+          id: item.id
         });
         canvas.add(rect);
       } else {
@@ -328,10 +339,12 @@
           strokeWidth: 2,
           stroke: 'white',
           originX: 'center',
-          originY: 'center'
+          originY: 'center',
+          id: item.id
         });
         canvas.add(circle);
         objectsToScaleDown.push(circle);
+        markers.push(circle);
       }
     });
   }
@@ -360,6 +373,56 @@
       currentTimeVerticalLine.set({left});
       currentTimeVerticalLine.bringToFront();
     }, 1000);
+  }
+
+  function renderArrow(firstItemId, dependencies) {
+    var dependency = dependencies.find(dependency => dependency.firstItemId === firstItemId);
+    if (dependency) {
+      var {secondItemId} = dependency;
+      var firstItem = markers.find(marker => marker.id === firstItemId);
+      var secondItem = markers.find(marker => marker.id === secondItemId);
+      if (firstItem && secondItem) {
+        var lineStrokeWidth = 2;
+        var arrowHeadPath = `M 0 0 L -10 -5 L -7.5 0 L -10 5 z`;
+        var arrowHead = new fabric.Path(arrowHeadPath, {
+          strokeWidth: lineStrokeWidth,
+          stroke: "#9c0000",
+          // stroke: "white",
+          // fill: 'white',
+          fill: '#9c0000',
+          shadow: 'rgba(0,0,0,0.5) 0px 0px 1px',
+        });
+        var curveLen = firstItem.height * 2;
+        var secondItemLeft = secondItem.aCoords.tl.x - 7.5;
+        var path = `M ${firstItem.aCoords.tr.x},${firstItem.aCoords.br.y - (firstItem.height / 2)} C ${firstItem.aCoords.tr.x + curveLen},${firstItem.aCoords.br.y - (firstItem.height / 2)} ${secondItemLeft - curveLen},${secondItem.aCoords.br.y - (secondItem.height / 2)} ${secondItemLeft},${secondItem.aCoords.br.y - (secondItem.height / 2)}`;
+        var cubicCurve = new fabric.Path(path, {
+          strokeWidth: lineStrokeWidth,
+          stroke: "#9c0000",
+          // stroke: "white",
+          fill: false,
+          shadow: 'rgba(0,0,0,0.5) 0px 0px 1px',
+        });
+        arrowHead.set({
+          left: secondItemLeft - 2.5,
+          top: secondItem.aCoords.br.y - (secondItem.height / 2) - (arrowHead.height / 2) - (lineStrokeWidth / 2)
+        });
+
+        var group = new fabric.Group([cubicCurve, arrowHead], {
+          selectable: true,
+          objectCaching: false,
+          hoverCursor: 'default'
+        });
+        canvas.add(group);
+        arrow = {
+          firstItemId,
+          canvasObj: group
+        };
+        var zoom = canvas.getZoom();
+        if (zoom > 1) {
+          // scaleDownObjects(zoom, [group]);
+        }
+      }
+    }
   }
 
   Sophia.init.prototype = Sophia.prototype;
