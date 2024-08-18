@@ -41,17 +41,22 @@ var groups = [
             color: "#4F92D6",
           },
           {
-            startTime: "08:30:00",
-            color: "blue",
-            id: 'second-item'
-          },
-          {
             startTime: "02:00:00",
             color: "blue",
           },
           {
             startTime: "02:30:00",
             color: "blue",
+          },
+          {
+            startTime: "08:30:00",
+            color: "blue",
+            id: 'dependency-01'
+          },
+          {
+            startTime: "10:00:00",
+            color: "blue",
+            id: 'dependency-02'
           },
         ],
       },
@@ -69,11 +74,6 @@ var groups = [
             color: "#92D050",
           },
           {
-            startTime: "08:00:00",
-            color: "red",
-            id: 'first-item'
-          },
-          {
             startTime: "02:00:00",
             color: "red",
           },
@@ -81,16 +81,31 @@ var groups = [
             startTime: "02:30:00",
             color: "red",
           },
+          {
+            startTime: "08:00:00",
+            color: "red",
+            id: 'dependency-03'
+          },
+          {
+            startTime: "10:30:00",
+            color: "red",
+            id: 'dependency-04'
+          },
         ],
       },
     ],
   },
 ];
-var dependency = [
+var dependencies = [
   {
     id: '1',
-    firstItemId: 'first-item',
-    secondItemId: 'second-item'
+    firstItemId: 'dependency-03',
+    secondItemId: 'dependency-01'
+  },
+  {
+    id: '2',
+    firstItemId: 'dependency-04',
+    secondItemId: 'dependency-02'
   }
 ];
 // set others time zone as example below:
@@ -99,4 +114,4 @@ var dependency = [
 //   timeZone: 'America/New_York'
 // };
 var options = {};
-var s = S$(null, groups, dependency, options);
+var s = S$(null, groups, dependencies, options);

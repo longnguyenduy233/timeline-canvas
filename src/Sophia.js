@@ -1,6 +1,6 @@
 ;(function(global, fabric) {
-  var Sophia = function(items, groups, dependency, options) {
-    return new Sophia.init(items, groups, dependency, options);
+  var Sophia = function(items, groups, dependencies, options) {
+    return new Sophia.init(items, groups, dependencies, options);
   }
 
   var canvas;
@@ -31,8 +31,9 @@
   var oldZoom = 1;
   var currentTimeVerticalLine;
   var currentTimeVerticalLineInterval;
-  var dependencies;
-  var arrow;
+  var internalDependencies;
+  var arrows = [];
+  var CustomFabricPath;
 
   Sophia.prototype = {
     setOptions: function(options) {
@@ -51,7 +52,7 @@
     }
   };
 
-  Sophia.init = function(items, groups, dependency, options) {
+  Sophia.init = function(items, groups, dependencies, options) {
     var self = this;
     var defaultOptions = {
       locale: null,
@@ -67,11 +68,12 @@
     };
     self.locale = self.options.locale;
     self.timeZone = self.options.timeZone;
-    self.dependency = dependency;
-    dependencies = dependency;
+    self.dependencies = dependencies;
+    internalDependencies = dependencies;
     if (!fabric) {
       throw 'Fabric is not loaded';
     }
+    createCustomFabricPath();
     canvas = new fabric.Canvas('canvas');
     canvasWidth = canvas.getWidth();
     canvasHeight = canvas.getHeight();
@@ -82,7 +84,7 @@
 
     drawRuler();
     addCurrentTimeVerticalLine(self.locale, self.timeZone);
-    renderArrow('first-item', self.dependency);
+    renderAllArrow(self.dependencies);
   }
 
   function redrawRulerItem(jumpSizeInSeconds) {
@@ -201,7 +203,7 @@
       object.setOptions({
         scaleX: 1 / zoom
       });
-      object.setCoords();
+      // object.setCoords();
     })
   }
 
@@ -246,9 +248,10 @@
     oldZoom = zoom;
 
     scaleDownObjects(zoom, [...objectsToScaleDown, ...currentRulerItems, currentTimeVerticalLine]);
-    if (arrow) {
-      canvas.remove(arrow.canvasObj);
-      renderArrow(arrow.firstItemId, dependencies);
+    if (arrows.length > 0) {
+      canvas.remove(...arrows);
+      arrows = [];
+      renderAllArrow(internalDependencies);
     }
   }
 
@@ -382,6 +385,7 @@
       var firstItem = markers.find(marker => marker.id === firstItemId);
       var secondItem = markers.find(marker => marker.id === secondItemId);
       if (firstItem && secondItem) {
+        var zoom = canvas.getZoom();
         var lineStrokeWidth = 2;
         var arrowHeadPath = `M 0 0 L -10 -5 L -7.5 0 L -10 5 z`;
         var arrowHead = new fabric.Path(arrowHeadPath, {
@@ -391,20 +395,35 @@
           // fill: 'white',
           fill: '#9c0000',
           shadow: 'rgba(0,0,0,0.5) 0px 0px 1px',
+          scaleX: 1 / zoom,
         });
-        var curveLen = firstItem.height * 2;
-        var secondItemLeft = secondItem.aCoords.tl.x - 7.5;
-        var path = `M ${firstItem.aCoords.tr.x},${firstItem.aCoords.br.y - (firstItem.height / 2)} C ${firstItem.aCoords.tr.x + curveLen},${firstItem.aCoords.br.y - (firstItem.height / 2)} ${secondItemLeft - curveLen},${secondItem.aCoords.br.y - (secondItem.height / 2)} ${secondItemLeft},${secondItem.aCoords.br.y - (secondItem.height / 2)}`;
-        var cubicCurve = new fabric.Path(path, {
+        var itemHeight = firstItem.height / zoom;
+        var curveLen = itemHeight * 2;
+        var path;
+        if (secondItem.aCoords.tl.x < firstItem.aCoords.tl.x) {
+          var secondItemRight = secondItem.aCoords.tr.x + (arrowHead.getScaledWidth() - (2.5 / zoom));
+          var firstItemLeft = firstItem.aCoords.tl.x;
+          path = `M ${secondItemRight},${secondItem.oCoords.mr.y} C ${secondItemRight + curveLen},${secondItem.oCoords.mr.y} ${firstItemLeft - curveLen},${firstItem.oCoords.ml.y} ${firstItemLeft},${firstItem.oCoords.ml.y}`;
+          arrowHead.set({
+            left: secondItem.aCoords.tr.x,
+            top: secondItem.oCoords.ml.y - (arrowHead.height / 2) - (lineStrokeWidth / 2),
+            flipX: true
+          });
+        } else {
+          var secondItemLeft = secondItem.aCoords.tl.x - (arrowHead.getScaledWidth() - (2.5 / zoom));
+          var firstItemRight = firstItem.aCoords.tr.x;
+          path = `M ${firstItemRight},${firstItem.oCoords.mr.y} C ${firstItemRight + curveLen},${firstItem.oCoords.mr.y} ${secondItemLeft - curveLen},${secondItem.oCoords.ml.y} ${secondItemLeft},${secondItem.oCoords.ml.y}`;
+          arrowHead.set({
+            left: secondItemLeft - (2.5 / zoom),
+            top: secondItem.oCoords.ml.y - (arrowHead.height / 2) - (lineStrokeWidth / 2)
+          });
+        }
+        var cubicCurve = new CustomFabricPath(path, {
           strokeWidth: lineStrokeWidth,
           stroke: "#9c0000",
           // stroke: "white",
           fill: false,
           shadow: 'rgba(0,0,0,0.5) 0px 0px 1px',
-        });
-        arrowHead.set({
-          left: secondItemLeft - 2.5,
-          top: secondItem.aCoords.br.y - (secondItem.height / 2) - (arrowHead.height / 2) - (lineStrokeWidth / 2)
         });
 
         var group = new fabric.Group([cubicCurve, arrowHead], {
@@ -413,16 +432,43 @@
           hoverCursor: 'default'
         });
         canvas.add(group);
-        arrow = {
-          firstItemId,
-          canvasObj: group
-        };
-        var zoom = canvas.getZoom();
-        if (zoom > 1) {
-          // scaleDownObjects(zoom, [group]);
-        }
+        arrows.push(group);
       }
     }
+  }
+
+  function createCustomFabricPath() {
+    CustomFabricPath = fabric.util.createClass(fabric.Path, {
+      _renderStroke : function(ctx) {
+        var zoom = canvas.getZoom();
+        if (!this.stroke || this.strokeWidth === 0) {
+          return;
+        }
+        if (this.shadow && !this.shadow.affectStroke) {
+          this._removeShadow(ctx);
+        }
+        ctx.save();
+        ctx.scale(1/zoom, 1);
+        if (this.strokeUniform && this.group) {
+          var scaling = this.getObjectScaling();
+          ctx.scale(1 / scaling.scaleX, 1 / scaling.scaleY);
+        }
+        else if (this.strokeUniform) {
+          ctx.scale(1 / this.scaleX, 1 / this.scaleY);
+        }
+        this._setLineDash(ctx, this.strokeDashArray);
+        this._setStrokeStyles(ctx, this);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }); 
+  }
+
+  function renderAllArrow(dependencies) {
+    dependencies.forEach(dependency => {
+      var {firstItemId} = dependency;
+      renderArrow(firstItemId, dependencies);
+    });
   }
 
   Sophia.init.prototype = Sophia.prototype;
