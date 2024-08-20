@@ -427,7 +427,7 @@
         });
 
         var group = new fabric.Group([cubicCurve, arrowHead], {
-          selectable: true,
+          selectable: false,
           objectCaching: false,
           hoverCursor: 'default'
         });
